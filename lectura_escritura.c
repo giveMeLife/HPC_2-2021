@@ -75,7 +75,7 @@ void recorrer(int ** matrix, int M, int N, int T, double dTeta, int ** H, double
       if (matrix[x][y] != 0){
         for (int i = 0; i < T; i ++){
           double r = (x* cos(i*dTeta*M_PI/180) + y* sin(i*dTeta*M_PI/180));
-          int r2 = r/(2*dR);
+          int r2 = N*sqrt(2)/(2*dR);
           H[i][r2] =  H[i][r2] + 1;
         }
         
