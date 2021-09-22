@@ -75,7 +75,7 @@ void recorrer(int ** matrix, int M, int N, int T, double dTeta, int ** H, double
       if (matrix[x][y] != 0){
         for (int i = 0; i < T; i ++){
           double r = (x* cos(i*dTeta*M_PI/180) + y* sin(i*dTeta*M_PI/180));
-          int r2 = N*sqrt(2)/(2*dR);
+          int r2 = r/dR;
           H[i][r2] =  H[i][r2] + 1;
         }
         
@@ -100,6 +100,7 @@ void umbral(int ** H, int M, int R, int U){
     {
        for (int j = 0; j < R; ++j)
        {
+          //printf("H: %i\n", H[i][j] );
            if(H[i][j] > U){
                H[i][j] = 255;
            }
@@ -159,7 +160,7 @@ int main(int argc, char *argv[]){
       default:
         abort ();
       }
-    double dTeta = (M_PI/180)/T;
+    double dTeta = (M_PI)/T;
     double dR = (N*sqrt(2))/(2*R);
 
     //char filename[] = "simplehough1-256x256.raw";
