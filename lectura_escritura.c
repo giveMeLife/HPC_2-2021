@@ -70,12 +70,12 @@ void write_image(char* file_name, int* buffer_in, int size1, int size2){
 }
 
 void recorrer(int ** matrix, int M, int N, int T, double dTeta, int ** H, double dR){
-  for (int x = 0; x < M; ++x){
-    for (int y = 0; y < N; ++y){
+  for (int x = 0; x < M; x++){
+    for (int y = 0; y < N; y++){
       if (matrix[x][y] != 0){
         for (int i = 0; i < T; i ++){
-          double r = (x* cos(i*dTeta*M_PI/180) + y* sin(i*dTeta*M_PI/180));
-          int r2 = r/dR;
+          double r = (x* cos(i*dTeta) + y* sin(i*dTeta));
+          int r2 = (int)r/dR;
           H[i][r2] =  H[i][r2] + 1;
         }
         
@@ -100,21 +100,20 @@ void umbral(int ** H, int M, int R, int U){
     {
        for (int j = 0; j < R; ++j)
        {
-          //printf("H: %i\n", H[i][j] );
            if(H[i][j] > U){
                H[i][j] = 255;
            }
            else{
               H[i][j] = 0;
 
-        }
+            }
        }
     }
-    }
+}
 
 
 int main(int argc, char *argv[]){
-    int c;
+  int c;
   int N = 0;
   int T = 0;
   int R = 0;
@@ -160,8 +159,10 @@ int main(int argc, char *argv[]){
       default:
         abort ();
       }
-    double dTeta = (M_PI)/T;
-    double dR = (N*sqrt(2))/(2*R);
+    double theta = M_PI;
+    double dTeta = (theta)/(T);
+    double diagonal = sqrt(M*M + N*N);
+    double dR = diagonal/(R);
 
     //char filename[] = "simplehough1-256x256.raw";
     int* buffer = (int*)malloc(sizeof(int)*M*N);
@@ -175,16 +176,15 @@ int main(int argc, char *argv[]){
 
     int** H = (int**)malloc(sizeof(int*)*T);
     for(int i = 0; i < T; i++){
-        H[i] = (int*)malloc(sizeof(int)*R);
-    
-        }
-    H = matrix_hugh(T,R, H);  
+      H[i] = (int*)malloc(sizeof(int)*R);
+    }
+    H = matrix_hugh(T,R,H);  
     recorrer(matrix,M, N, T,  dTeta,H, dR);
 
     umbral(H,T,R,U);
     
     int* buffer2 = (int*)malloc(sizeof(int)*T*R);
-    matrix_to_raw(buffer2, H, T,R);
+    matrix_to_raw(buffer2, H, T, R);
 
     //char fileout[] = "b.raw";
     write_image(outputImg, buffer2, T,R);
