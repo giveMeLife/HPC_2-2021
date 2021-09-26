@@ -8,7 +8,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#define SIZE 65536
 
 /*
   Entrada: Nombre del archivo, buffer en donde se almacenará la imagen,
@@ -70,9 +69,9 @@ void matrix_to_raw(int* buffer_out, int** matrix, int size1, int size2){
 void write_image(char* file_name, int* buffer_in, int size1, int size2){
     int descriptor;
     int size = size1*size2;
-    descriptor = open(file_name, O_RDWR | O_CREAT,0777);
+    descriptor = open(file_name, O_RDWR | O_CREAT | O_EXCL, 0777);
     if( descriptor == -1 ){
-        fprintf(stderr,"Error creando imagen: %s\n",file_name);
+        fprintf(stderr,"Error creando imagen: %s . Revise que la imagen no exista ya en el directorio.\n",file_name);
         exit(1);
     }
     else{
@@ -231,6 +230,18 @@ void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, i
   }
 }
 
+void print_hough_matrix(int** H, int T, int R, double dR, double dT){
+  for(int i = 0; i<T; i++){
+    double angle = i*180*dT/M_PI;
+    for(int j = 0; j<R; j++){
+      if(H[i][j]!=0){
+        double radius = i*dR - R/2;
+        printf("Angulo: %lf, Radio: %lf\n", angle, radius);
+      }
+    }
+  }
+}
+
 int main(int argc, char *argv[]){
   int c;
   int N = 0;
@@ -253,19 +264,19 @@ int main(int argc, char *argv[]){
         strcpy(outputImg, optarg);
         break;
       case 'M':
-        M = atof(optarg);
+        M = atoi(optarg);
         break;
       case 'N':
-        N = atof(optarg);
+        N = atoi(optarg);
         break;
       case 'T':
-        T = atof(optarg);
+        T = atoi(optarg);
         break;
       case 'R':
-        R = atof(optarg);
+        R = atoi(optarg);
         break;
       case 'U':
-        U = atof(optarg);
+        U = atoi(optarg);
         break;
       case '?':
         if (optopt == 'c')
@@ -282,8 +293,8 @@ int main(int argc, char *argv[]){
       }
     double theta = M_PI;
     double dTeta = (theta)/(T);
-    double diagonal = sqrt(M*M + N*N);
-    double dR = 2*diagonal/(R);
+    double diagonal = sqrt((double)(M*M + N*N));
+    double dR = 2.0*diagonal/((double)R);
 
 
     //Lectura del archivo y traspaso a matriz
@@ -297,23 +308,23 @@ int main(int argc, char *argv[]){
     raw_to_matrix(buffer, matrix, M,N);
 
     //Creación de matriz H
-    int** H = (int**)malloc(sizeof(int*)*T);
+    int** H1 = (int**)malloc(sizeof(int*)*T);
     for(int i = 0; i < T; i++){
-      H[i] = (int*)malloc(sizeof(int)*R);
+      H1[i] = (int*)malloc(sizeof(int)*R);
     }
-    H = matrix_hough(T,R,H);  
+    H1 = matrix_hough(T,R,H1);  
 
     //Ejecución algoritmo secuencial
     start_t = clock();
-    hough_algorithm(matrix,M, N, T, dTeta,H, dR, R);
+    hough_algorithm(matrix,M, N, T, dTeta,H1, dR, R);
     end_t = clock();
     total_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    umbral(H1,T,R,U);
+    print_hough_matrix(H1, T, R, dR, dTeta);
     printf("Tiempo de latencia parte secuencial: %lf\n", total_time  );
 
-   //Escritura del resultado secuencial
-    int* buffer2 = (int*)malloc(sizeof(int)*T*R);
-    matrix_to_raw(buffer2, H, T, R);
-    write_image(outputImg, buffer2, T,R);
+    
+
 
     //Arreglo de ángulos
     float* angles = malloc(sizeof(float)*T);
@@ -321,20 +332,31 @@ int main(int argc, char *argv[]){
       angles[i] = (float)i;
     }
 
-    H = matrix_hough(T,R,H);  
+    int** H2 = (int**)malloc(sizeof(int*)*T);
+    for(int i = 0; i < T; i++){
+      H2[i] = (int*)malloc(sizeof(int)*R);
+    }
+    H2 = matrix_hough(T,R,H2);  
 
     //Ejecución algoritmo paralelo
     start_t = clock();
-    parallel_hough_algorithm(matrix, M, N, T, (float)dTeta, H, (float)dR, angles, R);
+    parallel_hough_algorithm(matrix, M, N, T, (float)dTeta, H2, (float)dR, angles, R);
     end_t = clock();
     total_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    //Umbralización de la solución
+    umbral(H2,T,R,U);
+    print_hough_matrix(H2, T, R, dR, dTeta);
     printf("Tiempo de latencia parte paralela: %lf\n", total_time  );
 
-    //Umbralización de la solución
-    umbral(H,T,R,U);
+
+    //Escritura del resultado secuencial
+    int* buffer2 = (int*)malloc(sizeof(int)*T*R);
+    matrix_to_raw(buffer2, H1, T, R);
+    write_image(outputImg, buffer2, T,R);
+
 
     //Escritura del resultado paralelo
     int* buffer3 = (int*)malloc(sizeof(int)*T*R);
-    matrix_to_raw(buffer3, H, T, R);
+    matrix_to_raw(buffer3, H2, T, R);
     write_image("parall.raw", buffer3, T,R);
 }

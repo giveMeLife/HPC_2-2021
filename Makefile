@@ -12,7 +12,7 @@ clean:
 	rm -rf *.o
 
 run_mul4:
-	./hough -i simplehough1-256x256.raw -o salida.raw -M 256 -N 256 -T 512 -R 512 -U 1
+	./hough -i simplehough1-256x256.raw -o salida.raw -M 256 -N 256 -T 512 -R 512 -U 100
 
 run_notmul4:
 	./hough -i simplehough1-256x256.raw -o salida.raw -M 256 -N 256 -T 513 -R 512 -U 2
