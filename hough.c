@@ -166,11 +166,10 @@ void umbral(int ** H, int M, int R, int U){
             H. Se tienen dos casos, el primero en donde el N° de ángulos no es múltiplo de 4 y el otro donde sí. 
    Salida:  Matriz H
 */
-void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, int ** H, float dR, float* angles, float R){
+void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, int ** H, float dR, float* angles, int R){
   if(T%4!=0){
     __m128 dTeta2 = _mm_set1_ps(dTeta);
-    __m128 dR2 = _mm_set1_ps(1/dR);
-    float normalized_radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
+    float radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
     for (int x = 0; x < M; x++){
       __m128 x_position = _mm_set1_ps((float)x);
       for (int y = 0; y < N; y++){
@@ -184,12 +183,11 @@ void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, i
             cosines = _mm_mul_ps(cosines, x_position);
             sines = _mm_mul_ps(sines, y_position);
             __m128 radius = _mm_add_ps(cosines, sines);
-            __m128 normalized_radius = _mm_mul_ps(radius, dR2);
-            _mm_store_ps(normalized_radius_att, normalized_radius); 
-            hough_vote(H, i, normalized_radius_att[0], dR, R);
-            hough_vote(H, i+1, normalized_radius_att[1], dR, R);
-            hough_vote(H, i+1, normalized_radius_att[2], dR, R);
-            hough_vote(H, i+1, normalized_radius_att[3], dR, R);
+            _mm_store_ps(radius_att, radius); 
+            hough_vote(H, i, radius_att[0], dR, R);
+            hough_vote(H, i+1, radius_att[1], dR, R);
+            hough_vote(H, i+1, radius_att[2], dR, R);
+            hough_vote(H, i+1, radius_att[3], dR, R);
           }
           for (int i = T/(4*4); i < T; i++ ){
             double r = (x* cos((i)*dTeta) + y* sin((i)*dTeta));
@@ -201,8 +199,7 @@ void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, i
   }
   else{
     __m128 dTeta2 = _mm_set1_ps(dTeta);
-    __m128 dR2 = _mm_set1_ps(1/dR);
-    float normalized_radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
+    float radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
     for (int x = 0; x < M; x++){
       __m128 x_position = _mm_set1_ps((float)x);
       for (int y = 0; y < N; y++){
@@ -216,13 +213,11 @@ void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, i
             cosines = _mm_mul_ps(cosines, x_position);
             sines = _mm_mul_ps(sines, y_position);
             __m128 radius = _mm_add_ps(cosines, sines);
-            __m128 normalized_radius = _mm_mul_ps(radius, dR2);
-
-            _mm_store_ps(normalized_radius_att, normalized_radius); 
-            hough_vote(H, i, normalized_radius_att[0], dR, R);
-            hough_vote(H, i+1, normalized_radius_att[1], dR, R);
-            hough_vote(H, i+2, normalized_radius_att[2], dR, R);
-            hough_vote(H, i+3, normalized_radius_att[3], dR, R);
+            _mm_store_ps(radius_att, radius); 
+            hough_vote(H, i, radius_att[0], dR, R);
+            hough_vote(H, i+1, radius_att[1], dR, R);
+            hough_vote(H, i+2, radius_att[2], dR, R);
+            hough_vote(H, i+3, radius_att[3], dR, R);
           }
         }
       }
@@ -252,7 +247,8 @@ int main(int argc, char *argv[]){
   char * inputImg = malloc(sizeof(char)*30);
   char * outputImg = malloc(sizeof(char)*30);
   clock_t start_t, end_t;
-  double total_time;
+  double total_time_sec, total_time_par;
+
   int a;
   while ((c = getopt(argc, argv, "i:o:M:N:T:R:U:")) != -1)
     switch (c)
@@ -293,38 +289,49 @@ int main(int argc, char *argv[]){
       }
     double theta = M_PI;
     double dTeta = (theta)/(T);
+
+    /*Se calcula la distancia máxima que puede existir en la imagen de tamano MxN */
     double diagonal = sqrt((double)(M*M + N*N));
+    /*Se calcula un delta R para parametrizar los valores obtenidos al realizar la transformada de Hough.
+    Se multiplica la distancia maxima (diagonal) por dos, para asi corresponder la distancia tanto negativa y
+    positiva dentro de la matriz de Hough. Esta distancia se parte en R, lo que sera el largo de la matriz de Hough*/
     double dR = 2.0*diagonal/((double)R);
 
 
     //Lectura del archivo y traspaso a matriz
     int* buffer = (int*)malloc(sizeof(int)*M*N);
     read_image(inputImg, buffer, M,N);
-    //Matriz que almacena al archivo
+    
+    
+    //Se asigna memoria a la matriz que almacena los datos de la imagen de raw a matriz.
     int** matrix = (int**)malloc(sizeof(int*)*M);
     for(int i = 0; i < M; i++){
         matrix[i] = (int*)malloc(sizeof(int)*N);
     }
+    //Se almacenan los datos del archivo raw a la matriz.
     raw_to_matrix(buffer, matrix, M,N);
 
-    //Creación de matriz H
+    //Se asigna memoria para la matriz que almacenara la transformada de Hough
     int** H1 = (int**)malloc(sizeof(int*)*T);
     for(int i = 0; i < T; i++){
       H1[i] = (int*)malloc(sizeof(int)*R);
     }
+    //Se genera la matriz de Hough inicial
     H1 = matrix_hough(T,R,H1);  
 
     //Ejecución algoritmo secuencial
     start_t = clock();
     hough_algorithm(matrix,M, N, T, dTeta,H1, dR, R);
     end_t = clock();
-    total_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    total_time_sec = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    //Se aplica umbralizacion
     umbral(H1,T,R,U);
+
+    //Se imprimen los radios y angulos de la matriz de Hough generada
+    printf("######### Angulos y radios para ejecucion secuencial #########\n");
     print_hough_matrix(H1, T, R, dR, dTeta);
-    printf("Tiempo de latencia parte secuencial: %lf\n", total_time  );
-
-    
-
+    printf("######### Fin #########\n");
+   
 
     //Arreglo de ángulos
     float* angles = malloc(sizeof(float)*T);
@@ -339,14 +346,23 @@ int main(int argc, char *argv[]){
     H2 = matrix_hough(T,R,H2);  
 
     //Ejecución algoritmo paralelo
+    /*
+    A diferencia de la ejecución secuencial, se utilizan variables flotante debido a la vectorizacion utilizada.
+    */
     start_t = clock();
     parallel_hough_algorithm(matrix, M, N, T, (float)dTeta, H2, (float)dR, angles, R);
     end_t = clock();
-    total_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    total_time_par = (double)(end_t - start_t) / CLOCKS_PER_SEC;
     //Umbralización de la solución
     umbral(H2,T,R,U);
+
+    //Se imprimen los radios y angulos de la matriz de Hough generada
+    printf("######### Angulos y radios para ejecucion paralela #########\n");
     print_hough_matrix(H2, T, R, dR, dTeta);
-    printf("Tiempo de latencia parte paralela: %lf\n", total_time  );
+    printf("######### Fin #########\n");
+    
+    printf("Tiempo de latencia parte secuencial: %lf\n", total_time_sec  );
+    printf("Tiempo de latencia parte paralela: %lf\n", total_time_par  );
 
 
     //Escritura del resultado secuencial
