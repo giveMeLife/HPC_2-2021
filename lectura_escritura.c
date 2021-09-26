@@ -1,5 +1,5 @@
-#include<stdio.h>
-#include<emmintrin.h>
+#include <stdio.h>
+#include <emmintrin.h>
 #include <unistd.h>
 #include <time.h>
 #include <fcntl.h>
@@ -54,7 +54,7 @@ void matrix_to_raw(int* buffer_out, int** matrix, int size1, int size2){
 void write_image(char* file_name, int* buffer_in, int size1, int size2){
     int descriptor;
     int size = size1*size2;
-    descriptor = open(file_name, O_WRONLY | O_CREAT);
+    descriptor = open(file_name, O_RDWR | O_CREAT);
     if( descriptor == -1 ){
         fprintf(stderr,"Error creando imagen: %s\n",file_name);
         exit(1);
@@ -68,14 +68,25 @@ void write_image(char* file_name, int* buffer_in, int size1, int size2){
 
 }
 
-void hough_algorithm(int ** matrix, int M, int N, int T, double dTeta, int ** H, double dR){
+void hough_vote(int ** hough_matrix, int i, int r, double dR, int R){
+  int normalized_r;
+  if(r < 0){
+    normalized_r = (int)abs(((r/dR))+(double)R/2);
+  }
+  else{
+    normalized_r = (int)((r/dR)+(double)R/2);
+  }
+  hough_matrix[i][normalized_r] =  hough_matrix[i][normalized_r] + 1;
+}
+
+
+void hough_algorithm(int ** matrix, int M, int N, int T, double dTeta, int ** H, double dR, double diagonal, double R){
   for (int x = 0; x < M; x++){
     for (int y = 0; y < N; y++){
       if (matrix[x][y] != 0){
         for (int i = 0; i < T; i ++){
           double r = (x* cos((i)*dTeta) + y* sin((i)*dTeta));
-          int r2 = (int)(r/dR);
-          H[i][r2] =  H[i][r2] + 1;
+          hough_vote(H, i, r, dR, R);
         }
         
       }
@@ -110,9 +121,10 @@ void umbral(int ** H, int M, int R, int U){
     }
 }
 
-void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, int ** H, float dR, float* angles){
+void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, int ** H, float dR, float* angles, float diagonal, float R){
    __m128 dTeta2 = _mm_set1_ps(dTeta);
    __m128 dR2 = _mm_set1_ps(1/dR);
+   float normalized_radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
   for (int x = 0; x < M; x++){
      __m128 x_position = _mm_set1_ps((float)x);
     for (int y = 0; y < N; y++){
@@ -127,11 +139,11 @@ void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, i
           sines = _mm_mul_ps(sines, y_position);
           __m128 radius = _mm_add_ps(cosines, sines);
           __m128 normalized_radius = _mm_mul_ps(radius, dR2);
-
-          H[i][(int)normalized_radius[0]] =  H[i][(int)normalized_radius[0]] + 1;
-          H[i+1][(int)normalized_radius[1]] =  H[i][(int)normalized_radius[1]] + 1;
-          H[i+2][(int)normalized_radius[2]] =  H[i][(int)normalized_radius[2]] + 1;
-          H[i+3][(int)normalized_radius[3]] =  H[i][(int)normalized_radius[3]] + 1;
+          _mm_store_ps(normalized_radius_att, normalized_radius); 
+          hough_vote(H, i, normalized_radius_att[0], dR, R);
+          hough_vote(H, i, normalized_radius_att[1], dR, R);
+          hough_vote(H, i, normalized_radius_att[2], dR, R);
+          hough_vote(H, i, normalized_radius_att[3], dR, R);
         }
       }
     }
@@ -147,7 +159,9 @@ int main(int argc, char *argv[]){
   int M;
   char * inputImg = malloc(sizeof(char)*30);
   char * outputImg = malloc(sizeof(char)*30);
-  clock_t start_t, end_t, total_t;
+  clock_t start_t, end_t;
+  double total_time;
+  int a;
   while ((c = getopt(argc, argv, "i:o:M:N:T:R:U:")) != -1)
     switch (c)
       {
@@ -188,7 +202,7 @@ int main(int argc, char *argv[]){
     double theta = M_PI;
     double dTeta = (theta)/(T);
     double diagonal = sqrt(M*M + N*N);
-    double dR = diagonal/(R);
+    double dR = 2*diagonal/(R);
 
 
     //Lectura del archivo y traspaso a matriz
@@ -210,10 +224,10 @@ int main(int argc, char *argv[]){
 
     //Ejecución algoritmo secuencial
     start_t = clock();
-    hough_algorithm(matrix,M, N, T,  dTeta,H, dR);
+    hough_algorithm(matrix,M, N, T, dTeta,H, dR, diagonal, R);
     end_t = clock();
-    total_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
-    printf("Tiempo de latencia parte secuencial: %f\n", total_t  );
+    total_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    printf("Tiempo de latencia parte secuencial: %lf\n", total_time  );
 
     //Arreglo de ángulos
     float* angles = malloc(sizeof(float)*T);
@@ -223,10 +237,10 @@ int main(int argc, char *argv[]){
 
     //Ejecución algoritmo paralelo
     start_t = clock();
-    parallel_hough_algorithm(matrix, M, N, T, (float)dTeta, H, (float)dR, angles);
+    parallel_hough_algorithm(matrix, M, N, T, (float)dTeta, H, (float)dR, angles, diagonal, R);
     end_t = clock();
-    total_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
-    printf("Tiempo de latencia parte paralela: %f\n", total_t  );
+    total_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    printf("Tiempo de latencia parte paralela: %lf\n", total_time  );
 
     //Umbralización de la solución
     umbral(H,T,R,U);
@@ -240,5 +254,5 @@ int main(int argc, char *argv[]){
     //Escritura del resultado paralelo
     int* buffer3 = (int*)malloc(sizeof(int)*T*R);
     matrix_to_raw(buffer3, H, T, R);
-    write_image("paralela.raw", buffer3, T,R);
+    write_image("parall.raw", buffer3, T,R);
 }
