@@ -70,7 +70,7 @@ void matrix_to_raw(int* buffer_out, int** matrix, int size1, int size2){
 void write_image(char* file_name, int* buffer_in, int size1, int size2){
     int descriptor;
     int size = size1*size2;
-    descriptor = open(file_name, O_RDWR | O_CREAT);
+    descriptor = open(file_name, O_RDWR | O_CREAT,0777);
     if( descriptor == -1 ){
         fprintf(stderr,"Error creando imagen: %s\n",file_name);
         exit(1);
@@ -162,34 +162,69 @@ void umbral(int ** H, int M, int R, int U){
 
 /* Entrada: Matriz que contiene la imagen, ancho y alto de la imagen, delta del ángulo, matriz H, delta del radio, arreglo de 
             ángulos y N° de radios.
-   Proceso: Se asigna el valor de dTeta y 1/dR a dos registros distintos de 4 elementos, lo mismo con los valor de x e y. Luego
-            se realiza la ecuación con registro de a 4 de manera paralela. Finalmente se almacenan los resultados en la matriz
-            H.
-   Salida:  Matriz H modificada.
+   Proceso: Se asigna el valor de dTeta y 1/dR a dos registros  de 4 elementos, lo mismo con los valor de x e y. Luego
+            se realiza la ecuación con 4 registros de manera paralela. Finalmente se almacenan los resultados en la matriz
+            H. Se tienen dos casos, el primero en donde el N° de ángulos no es múltiplo de 4 y el otro donde sí. 
+   Salida:  Matriz H
 */
 void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, int ** H, float dR, float* angles, float R){
-   __m128 dTeta2 = _mm_set1_ps(dTeta);
-   __m128 dR2 = _mm_set1_ps(1/dR);
-   float normalized_radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
-  for (int x = 0; x < M; x++){
-     __m128 x_position = _mm_set1_ps((float)x);
-    for (int y = 0; y < N; y++){
-       __m128 y_position = _mm_set1_ps((float)y);
-      if (matrix[x][y] != 0){
-        for (int i = 0; i < T/4*4; i += 4){
-          __m128 indexes = _mm_load_ps(&angles[i]);
-          __m128 angle = _mm_mul_ps(dTeta2, indexes);
-          __m128 cosines = _mm_setr_ps(cos(angle[0]), cos(angle[1]), cos(angle[2]), cos(angle[3]));
-          __m128 sines = _mm_setr_ps(sin(angle[0]), sin(angle[1]), sin(angle[2]), sin(angle[3]));
-          cosines = _mm_mul_ps(cosines, x_position);
-          sines = _mm_mul_ps(sines, y_position);
-          __m128 radius = _mm_add_ps(cosines, sines);
-          __m128 normalized_radius = _mm_mul_ps(radius, dR2);
-          _mm_store_ps(normalized_radius_att, normalized_radius); 
-          hough_vote(H, i, normalized_radius_att[0], dR, R);
-          hough_vote(H, i, normalized_radius_att[1], dR, R);
-          hough_vote(H, i, normalized_radius_att[2], dR, R);
-          hough_vote(H, i, normalized_radius_att[3], dR, R);
+  if(T%4!=0){
+    __m128 dTeta2 = _mm_set1_ps(dTeta);
+    __m128 dR2 = _mm_set1_ps(1/dR);
+    float normalized_radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
+    for (int x = 0; x < M; x++){
+      __m128 x_position = _mm_set1_ps((float)x);
+      for (int y = 0; y < N; y++){
+        __m128 y_position = _mm_set1_ps((float)y);
+        if (matrix[x][y] != 0){
+          for (int i = 0; i < T/4*4; i += 4){
+            __m128 indexes = _mm_load_ps(&angles[i]);
+            __m128 angle = _mm_mul_ps(dTeta2, indexes);
+            __m128 cosines = _mm_setr_ps(cos(angle[0]), cos(angle[1]), cos(angle[2]), cos(angle[3]));
+            __m128 sines = _mm_setr_ps(sin(angle[0]), sin(angle[1]), sin(angle[2]), sin(angle[3]));
+            cosines = _mm_mul_ps(cosines, x_position);
+            sines = _mm_mul_ps(sines, y_position);
+            __m128 radius = _mm_add_ps(cosines, sines);
+            __m128 normalized_radius = _mm_mul_ps(radius, dR2);
+            _mm_store_ps(normalized_radius_att, normalized_radius); 
+            hough_vote(H, i, normalized_radius_att[0], dR, R);
+            hough_vote(H, i+1, normalized_radius_att[1], dR, R);
+            hough_vote(H, i+1, normalized_radius_att[2], dR, R);
+            hough_vote(H, i+1, normalized_radius_att[3], dR, R);
+          }
+          for (int i = T/(4*4); i < T; i++ ){
+            double r = (x* cos((i)*dTeta) + y* sin((i)*dTeta));
+            hough_vote(H, i, r, dR, R);
+          }
+        }
+      }
+    }
+  }
+  else{
+    __m128 dTeta2 = _mm_set1_ps(dTeta);
+    __m128 dR2 = _mm_set1_ps(1/dR);
+    float normalized_radius_att[4] __attribute__((aligned(16))) = { 0.0, 0.0, 0.0, 0.0 };
+    for (int x = 0; x < M; x++){
+      __m128 x_position = _mm_set1_ps((float)x);
+      for (int y = 0; y < N; y++){
+        __m128 y_position = _mm_set1_ps((float)y);
+        if (matrix[x][y] != 0){
+          for (int i = 0; i < T; i += 4){
+            __m128 indexes = _mm_load_ps(&angles[i]);
+            __m128 angle = _mm_mul_ps(dTeta2, indexes);
+            __m128 cosines = _mm_setr_ps(cos(angle[0]), cos(angle[1]), cos(angle[2]), cos(angle[3]));
+            __m128 sines = _mm_setr_ps(sin(angle[0]), sin(angle[1]), sin(angle[2]), sin(angle[3]));
+            cosines = _mm_mul_ps(cosines, x_position);
+            sines = _mm_mul_ps(sines, y_position);
+            __m128 radius = _mm_add_ps(cosines, sines);
+            __m128 normalized_radius = _mm_mul_ps(radius, dR2);
+
+            _mm_store_ps(normalized_radius_att, normalized_radius); 
+            hough_vote(H, i, normalized_radius_att[0], dR, R);
+            hough_vote(H, i+1, normalized_radius_att[1], dR, R);
+            hough_vote(H, i+2, normalized_radius_att[2], dR, R);
+            hough_vote(H, i+3, normalized_radius_att[3], dR, R);
+          }
         }
       }
     }
@@ -275,11 +310,18 @@ int main(int argc, char *argv[]){
     total_time = (double)(end_t - start_t) / CLOCKS_PER_SEC;
     printf("Tiempo de latencia parte secuencial: %lf\n", total_time  );
 
+   //Escritura del resultado secuencial
+    int* buffer2 = (int*)malloc(sizeof(int)*T*R);
+    matrix_to_raw(buffer2, H, T, R);
+    write_image(outputImg, buffer2, T,R);
+
     //Arreglo de ángulos
     float* angles = malloc(sizeof(float)*T);
     for(int i = 0; i < T; i++){
       angles[i] = (float)i;
     }
+
+    H = matrix_hough(T,R,H);  
 
     //Ejecución algoritmo paralelo
     start_t = clock();
@@ -290,12 +332,6 @@ int main(int argc, char *argv[]){
 
     //Umbralización de la solución
     umbral(H,T,R,U);
-    
-    //Escritura del resultado secuencial
-    int* buffer2 = (int*)malloc(sizeof(int)*T*R);
-    matrix_to_raw(buffer2, H, T, R);
-    write_image(outputImg, buffer2, T,R);
-
 
     //Escritura del resultado paralelo
     int* buffer3 = (int*)malloc(sizeof(int)*T*R);
