@@ -353,6 +353,17 @@ int main(int argc, char *argv[]){
     parallel_hough_algorithm(matrix, M, N, T, (float)dTeta, H2, (float)dR, angles, R);
     end_t = clock();
     total_time_par = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    
+    int* buffer4 = (int*)malloc(sizeof(int)*T*R);
+    matrix_to_raw(buffer4, H2, T, R);
+    char* name2 = (char*)malloc(sizeof(char)*50);
+    strcpy(name2, "paralelo_sinUmbral_");
+    write_image(strcat(name2,outputImg), buffer4, T,R);
+
+
+
+
+
     //Umbralización de la solución
     umbral(H2,T,R,U);
 
