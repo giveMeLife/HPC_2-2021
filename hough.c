@@ -146,17 +146,17 @@ int ** matrix_hough(int M, int R, int ** H){
 void umbral(int ** H, int M, int R, int U){
     for (int i = 0; i < M; ++i)
     {
-       for (int j = 0; j < R; ++j)
-       {
-           if(H[i][j] > U){
-               H[i][j] = 255;
-           }
-           else{
+      for (int j = 0; j < R; ++j)
+      {
+          if(H[i][j] > U){
+              H[i][j] = 255;
+          }
+          else{
               H[i][j] = 0;
-
-            }
-       }
+          }
+      }
     }
+    
 }
 
 /* Entrada: Matriz que contiene la imagen, ancho y alto de la imagen, delta del ángulo, matriz H, delta del radio, arreglo de 
@@ -186,10 +186,10 @@ void parallel_hough_algorithm(int ** matrix, int M, int N, int T, float dTeta, i
             _mm_store_ps(radius_att, radius); 
             hough_vote(H, i, radius_att[0], dR, R);
             hough_vote(H, i+1, radius_att[1], dR, R);
-            hough_vote(H, i+1, radius_att[2], dR, R);
-            hough_vote(H, i+1, radius_att[3], dR, R);
+            hough_vote(H, i+2, radius_att[2], dR, R);
+            hough_vote(H, i+3, radius_att[3], dR, R);
           }
-          for (int i = T/(4*4); i < T; i++ ){
+          for (int i = T/4*4; i < T; i++ ){
             double r = (x* cos((i)*dTeta) + y* sin((i)*dTeta));
             hough_vote(H, i, r, dR, R);
           }
@@ -368,11 +368,21 @@ int main(int argc, char *argv[]){
     //Escritura del resultado secuencial
     int* buffer2 = (int*)malloc(sizeof(int)*T*R);
     matrix_to_raw(buffer2, H1, T, R);
-    write_image(strcat("secuencial",outputImg), buffer2, T,R);
+    char* name = (char*)malloc(sizeof(char)*50);
+    strcpy(name, "secuencial_");
+    write_image(strcat(name,outputImg), buffer2, T,R);
 
 
     //Escritura del resultado paralelo
     int* buffer3 = (int*)malloc(sizeof(int)*T*R);
     matrix_to_raw(buffer3, H2, T, R);
     write_image(outputImg, buffer3, T,R);
+
+    free(name);
+    for(int i = 0; i < T; i++){
+      free(H1[i]);
+      free(H2[i]);
+    }
+    free(H1);
+    free(H2);
 }
