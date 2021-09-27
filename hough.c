@@ -368,11 +368,11 @@ int main(int argc, char *argv[]){
     //Escritura del resultado secuencial
     int* buffer2 = (int*)malloc(sizeof(int)*T*R);
     matrix_to_raw(buffer2, H1, T, R);
-    write_image(outputImg, buffer2, T,R);
+    write_image(strcat("secuencial",outputImg), buffer2, T,R);
 
 
     //Escritura del resultado paralelo
     int* buffer3 = (int*)malloc(sizeof(int)*T*R);
     matrix_to_raw(buffer3, H2, T, R);
-    write_image("parall.raw", buffer3, T,R);
+    write_image(outputImg, buffer3, T,R);
 }
