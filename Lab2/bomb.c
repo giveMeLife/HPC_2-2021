@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <getopt.h>
-#include <string.h>
-#include <stdlib.h>
-
+#include "functions.h"
 
 int main(int argc, char *argv[]){
   int c;
@@ -41,6 +37,11 @@ int main(int argc, char *argv[]){
         return 1;
       default:
         abort ();
+      }
+
+      Particle* particles = readFile(i);
+      for(int i = 0; i<particles_amount; i++){
+        printf("index: %d, energy: %lf\n", particles[i].position, particles[i].energy);
       }
    
 }
