@@ -51,3 +51,32 @@ Particle* readFile(char* file_name){
     fclose(fp);
     return particles;
 }
+
+
+void bomb(Particle * particles, int N){
+    int pos;
+    double energy;
+    double MIN_ENERGY = pow(10,-3)/N;
+    double * array = (double *)malloc(sizeof(double)*N);
+    double value;
+
+    for (int i = 0; i < N; ++i){
+        array[i] = 0;
+    }
+
+    for (int j = 0; j < particles_amount; ++j){
+        pos = particles[j].position;
+        energy = particles[j].energy;
+        for (int i = 0; i < N; ++i){
+            value = array[i] + (1000.0*energy)/(N*sqrt(fabs(pos-i)+1));
+            if(value > MIN_ENERGY){
+               array[i] = value;
+           }
+        }
+
+    }
+
+    for (int i = 0; i < N; ++i){
+        printf("%i: %lf\n",i,array[i]);
+    }
+}

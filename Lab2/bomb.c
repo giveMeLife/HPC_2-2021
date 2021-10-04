@@ -41,7 +41,9 @@ int main(int argc, char *argv[]){
 
       Particle* particles = readFile(i);
       for(int i = 0; i<particles_amount; i++){
-        printf("index: %d, energy: %lf\n", particles[i].position, particles[i].energy);
+        //printf("index: %d, energy: %lf\n", particles[i].position, particles[i].energy);
       }
+      bomb(particles,N);
+
    
 }

@@ -12,4 +12,4 @@ clean:
 	rm -rf *.o
 
 run:
-	./bomb -t 4 -N 10 -i entrada.txt -o output.txt -D 0 
+	./bomb -t 4 -N 35 -i entrada.txt -o output.txt -D 0 
