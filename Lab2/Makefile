@@ -1,12 +1,15 @@
 CC= gcc
-CFLAGS = -lm -fopenmp
+CFLAGS = -lm -fopenmp -lniceprint -L
+headers = function.h
+library = lniceprint
+bomb: bomb.o function.o
+	$(CC) -o bomb.o function.o $(CFLAGS) 
 
-bomb: bomb.o
-	$(CC) -o $@ $^ $(CFLAGS)
+bomb.o: bomb.c 
+	$(CC) -c bomb.c 
 
-lectura_escritura.o: bomb.c
-	$(CC) -c -o $@ $*.c $(CFLAGS)
-
+function.o: function.c 
+	$(CC) -c function 
 
 clean:
 	rm -rf *.o

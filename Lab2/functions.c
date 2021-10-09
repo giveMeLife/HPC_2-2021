@@ -153,3 +153,33 @@ double* bomb_parallel2(Particle * particles, int N, int t){
     }*/
     return(final_array);
 }
+
+double * bomb_parallel3(Particle * particles, int N, int t){
+    int pos;
+    double energy;
+    double MIN_ENERGY = pow(10,-3)/N;
+    double * array = (double *)malloc(sizeof(double)*N);
+    double value;
+
+    for (int i = 0; i < N; ++i){
+        array[i] = 0;
+    }
+
+    for (int j = 0; j < particles_amount; ++j){
+        pos = particles[j].position;
+        energy = particles[j].energy;
+        #pragma omp parallel shared(array) private(value) num_threads(t)
+            {
+            #pragma omp for 
+
+            for (int i = 0; i < N; ++i){
+               // printf("Soy la hebra %d y ejecuto i: %d \n",omp_get_thread_num(),i);
+                value = array[i] + (1000.0*energy)/(N*sqrt(fabs(pos-i)+1));
+                if(value > MIN_ENERGY){
+                   array[i] = value;
+               }
+            }
+        }
+}
+    return(array);
+}
