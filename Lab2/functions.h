@@ -24,3 +24,6 @@ void bomb(Particle * particles, int N);
 double* bomb_parallel(Particle * particles, int N, int t);
 double* bomb_parallel2(Particle * particles, int N, int t);
 double* bomb_parallel3(Particle * particles, int N, int t);
+double* maximum_energy(double* energies, int N);
+void write_file(char* file_name, double*energies, int N);
+double* maximum_energy(double* energies, int N);
