@@ -1,6 +1,7 @@
 #include "functions.h"
 
 int main(int argc, char *argv[]){
+
   int c;
   int t = 0;
   int N = 0;
@@ -38,12 +39,31 @@ int main(int argc, char *argv[]){
       default:
         abort ();
       }
+    
 
-      Particle* particles = readFile(i);
-      for(int i = 0; i<particles_amount; i++){
-        //printf("index: %d, energy: %lf\n", particles[i].position, particles[i].energy);
-      }
-      bomb(particles,N);
+    clock_t start_t, end_t;
+    double total_time_sec, total_time_par, total_time_par2;
+    Particle* particles = readFile(i);
+    
 
+    /*Prueba de tiempos parte secuencial y paralela*/
+    start_t = clock();
+    bomb(particles,N);
+    end_t = clock();
+    total_time_sec = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+
+    double* structure = (double*)malloc(sizeof(double)*N);
+    start_t = clock(); 
+    structure = bomb_parallel(particles, N, t);
+    end_t = clock();
+    total_time_par = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+
+
+    double* structure2 = (double*)malloc(sizeof(double)*N);
+    start_t = clock(); 
+    structure2 = bomb_parallel2(particles, N, t);
+    end_t = clock();
+    total_time_par2 = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+    printf("t_par: %lf, t_par2: %lf, t_sec: %lf\n", total_time_par, total_time_par2, total_time_sec);
    
 }
