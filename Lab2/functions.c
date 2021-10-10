@@ -1,6 +1,16 @@
 #include "functions.h"
 
 
+
+/*
+Descripción: Función que se encarga de leer archivo de entrada con la cantidad de partículas a impactar, y la posición de impacto
+             de cada partícula, junto con su energía.
+Entrada: Nombre del archivo de entrada ("file_name")
+Proceso: Se obtiene línea por línea del archivo y la primera línea se guarda como la cantidad de partículas, 
+         y el resto se guardan en un arreglo de estructuras que tienen la información de cada partícula.  
+Salida: Como salida se genera un arreglo de estructuras Particle, que contiene la información de cada partícula (Posición de impacto
+        y energía)
+*/
 Particle* readFile(char* file_name){
 
     Particle* particles;
@@ -59,7 +69,7 @@ void bomb(Particle * particles, int N){
         }
 
     }
-
+ 
     /*for (int i = 0; i < N; ++i){
         printf("%i: %lf\n",i,array[i]);
     }*/
@@ -107,10 +117,10 @@ double* bomb_parallel(Particle * particles, int N, int t){
         }
         
     }
-    
+    /*
     for (int i = 0; i < N; i++){
         printf("%i: %lf\n",i,final_array[i]);
-    }
+    }*/
     return(final_array);
 }
 
@@ -181,6 +191,14 @@ double * bomb_parallel3(Particle * particles, int N, int t){
     return(array);
 }
 
+
+/*
+Descripción: Función que se encarga de determinar la energía máxima almacenada en la estructura luego del bombardeo de
+             partículas.
+Entrada: Arreglo de tipo double, donde se tienen las energías de la estructura y un entero N indicando el largo del arreglo.
+Proceso: Se recorre el arreglo preguntando si el dato analizado es el máximo dentro del arreglo.
+Salida: Un arreglo de double de tamaño 2, indicando el primero la posición dentro de la estructura y el segundo, la máxima energía.
+*/
 double* maximum_energy(double* energies, int N){
     double* values = (double*)malloc(sizeof(double)*2);
     int index = -1;
@@ -197,6 +215,15 @@ double* maximum_energy(double* energies, int N){
     return(values);
 }
 
+/*
+Descripción: Función que se encarga de generar un archivo de salida indicando la energía almacenada en cada posición del material, y
+             la posición que contiene la máxima energía junto con esta.
+Entrada: String que indica el nombre del archivo de salida, Arreglo de tipo double donde se tienen las energías de la estructura 
+         y un entero N indicando el largo del arreglo.
+Proceso: Se agrega consecutivamente las líneas a un archivo de salida con dos columnas por línea, indicando posición en el material y energía
+         almacenada.
+Salida: -
+*/
 void write_file(char* file_name, double*energies, int N){
     FILE *out_file = fopen(file_name, "w");
     int i = 0;
