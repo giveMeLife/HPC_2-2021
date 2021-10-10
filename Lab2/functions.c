@@ -69,12 +69,21 @@ void bomb(Particle * particles, int N){
         }
 
     }
- 
-    /*for (int i = 0; i < N; ++i){
-        printf("%i: %lf\n",i,array[i]);
-    }*/
 }
 
+/*
+Descripción: Función que se encarga de recorrer el arreglo de particulas de manera paralela, calcular el efecto
+             del choque de estas en el material
+Entrada: Estructura que contiene a cada una de las partículas del archivo de entrada con la posición de impacto y 
+         la energía. Entero que indica la cantidad de particulas que tiene el material y número de hebras. 
+Proceso: Se crea un arreglo que almacena el estado final del material. Luego se inicializa el bloque con omp, en donde el arreglo final es
+         una variable compartida, al igual que el número de elementos que este contiene y la estructura de particulas. A continuación, cada una
+         de las hebras calcula el impacto que tienen las particulas que ingresan en el material y lo almacena en un arreglo privado, la división
+         de las hebras se hace mediante schedule, en donde se indica que estas de manera dinámica realizarán dos de las iteraciones del for, es
+         decir, cada una de las hebras realiza en la medida de lo posible el cálculo del impacto de dos partículas en el material.  Finalmente 
+         se declara una sección crítica que se encarga de sumar en el arreglo principal los arreglos privados de cada hebra.
+Salida: Como salida se obtiene un arreglo de flotantes que contiene la energía final en el material.
+*/
 float* bomb_parallel(Particle * particles, int N, int t){
         float *final_array = (float *)malloc(sizeof(float)*N);
         float MIN_ENERGY = pow(10,-3)/N; 
@@ -124,6 +133,19 @@ float* bomb_parallel(Particle * particles, int N, int t){
     return(final_array);
 }
 
+/*
+Descripción: Función que se encarga de recorrer el arreglo de particulas de manera paralela, calcular el efecto
+             del choque de estas en el material
+Entrada: Estructura que contiene a cada una de las partículas del archivo de entrada con la posición de impacto y 
+         la energía. Entero que indica la cantidad de particulas que tiene el material y número de hebras. 
+Proceso: Se crea un arreglo que almacena el estado final del material. Luego se inicializa el bloque con omp, en donde el arreglo final es
+         una variable compartida, al igual que el número de elementos que este contiene y la estructura de particulas. A continuación, cada una
+         de las hebras calcula el impacto que tienen las particulas que ingresan en el material y lo almacena en un arreglo compartido, la división
+         de las hebras se hace mediante schedule, en done se indican que estas de manera dinámica realizarán dos de las iteraciones del for, es
+         decir, cada una de las hebras realiza en la medida de lo posible el cálculo del impacto de dos partículas en el material.  A diferencia de 
+         la implementación anterior la sección crítica ocurre en el arreglo que almacena el estado final del material.
+Salida: Como salida se obtiene un arreglo de flotantes que contiene la energía final en el material.
+*/
 float* bomb_parallel2(Particle * particles, int N, int t){
         float *final_array = (float *)malloc(sizeof(float)*N);
         float MIN_ENERGY = pow(10,-3)/N; 
@@ -162,6 +184,18 @@ float* bomb_parallel2(Particle * particles, int N, int t){
     return(final_array);
 }
 
+/*
+Descripción: Función que se encarga de recorrer el arreglo de particulas de manera paralela, calcular el efecto
+             del choque de estas en el material
+Entrada: Estructura que contiene a cada una de las partículas del archivo de entrada con la posición de impacto y 
+         la energía. Entero que indica la cantidad de particulas que tiene el material y número de hebras. 
+Proceso: Se crea un arreglo que almacena el estado final del material y que es de tipo compartido y se define el cálculo
+         de la energía que genera el impacto de una partícula para cada posición del material como privado (value). Luego 
+         se comienza el for paralelo, el cual genera que cada una de las hebras calcule 2 posiciones del for para cada una 
+         de las particulas. En este caso no existe condición de carrera, ya que cada hebra solo accede a una posición i, por
+         lo que no se pueden sobreescribir los valores.
+Salida: Como salida se obtiene un arreglo de flotantes que contiene la energía final en el material.
+*/
 float * bomb_parallel3(Particle * particles, int N, int t){
     int pos;
     double energy;
@@ -180,7 +214,6 @@ float * bomb_parallel3(Particle * particles, int N, int t){
         {
             #pragma omp for schedule(dynamic, 2)
             for (int i = 0; i < N; ++i){
-               // printf("Soy la hebra %d y ejecuto i: %d \n",omp_get_thread_num(),i);
                 value = array[i] + (1000.0*energy)/(N*sqrt(fabs(pos-i)+1));
                 if(value > MIN_ENERGY){
                    array[i] = value;

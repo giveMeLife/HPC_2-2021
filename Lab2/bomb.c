@@ -79,7 +79,10 @@ int main(int argc, char *argv[]){
     {
       structureFinal[i] = structure2[i];
     }
-    niceprint(N,structureFinal);  
+    if (D==1){
+      niceprint(N,structureFinal);
+    }
+      
 
     write_file(o,structure,N);
     
