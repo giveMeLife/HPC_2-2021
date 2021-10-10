@@ -14,7 +14,7 @@ extern void niceprint(int N, float *Energy);
 int particles_amount;
 struct particle{
     int position;
-    double energy;
+    float energy;
 }; 
 typedef struct particle Particle;
 

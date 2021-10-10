@@ -31,8 +31,8 @@ Particle* readFile(char* file_name){
         }
         else{
             int a, end;
-            double b;
-            if (sscanf(str, "%d%lf %n", &a, &b, &end) == 2 && str[end] == 0) {
+            float b;
+            if (sscanf(str, "%d%f %n", &a, &b, &end) == 2 && str[end] == 0) {
             } else {
                 fprintf(stderr, "malformed input line: %s", str);
                 exit(1);
@@ -49,8 +49,8 @@ Particle* readFile(char* file_name){
 
 void bomb(Particle * particles, int N){
     int pos;
-    double energy;
-    double MIN_ENERGY = pow(10,-3)/N;
+    float energy;
+    float MIN_ENERGY = pow(10,-3)/N;
     float * array = (float *)malloc(sizeof(float)*N);
     float value;
 
@@ -98,7 +98,7 @@ float* bomb_parallel(Particle * particles, int N, int t){
         int i;
         int j;
         int pos;
-        double energy;
+        float energy;
         float * array;
         array = (float *)malloc(sizeof(float)*N);
         for ( i = 0; i < N; ++i){
@@ -111,7 +111,7 @@ float* bomb_parallel(Particle * particles, int N, int t){
                 pos = particles[j].position;
                 energy = particles[j].energy;
                 for (i = 0; i < N; i++){
-                    value =array[i] + (1000.0*energy)/(N*sqrt(fabs(pos-(double)i)+1));
+                    value =array[i] + (1000.0*energy)/(N*sqrt(fabs(pos-(float)i)+1));
                         if(value  > MIN_ENERGY){
                             array[i] =   value;
                         }
@@ -126,10 +126,7 @@ float* bomb_parallel(Particle * particles, int N, int t){
         }
         
     }
-    /*
-    for (int i = 0; i < N; i++){
-        printf("%i: %lf\n",i,final_array[i]);
-    }*/
+
     return(final_array);
 }
 
@@ -160,7 +157,7 @@ float* bomb_parallel2(Particle * particles, int N, int t){
         int i;
         int j;
         int pos;
-        double energy;
+        float energy;
 
 
         #pragma omp for schedule(dynamic, 2)
@@ -168,7 +165,7 @@ float* bomb_parallel2(Particle * particles, int N, int t){
                 pos = particles[j].position;
                 energy = particles[j].energy;
                 for (i = 0; i < N; i++){
-                    value = (1000.0*energy)/(N*sqrt(fabs(pos-(double)i)+1));
+                    value = (1000.0*energy)/(N*sqrt(fabs(pos-(float)i)+1));
                     #pragma omp critical
                     {
                         if(value + final_array[i]  > MIN_ENERGY){
@@ -198,7 +195,7 @@ Salida: Como salida se obtiene un arreglo de flotantes que contiene la energía 
 */
 float * bomb_parallel3(Particle * particles, int N, int t){
     int pos;
-    double energy;
+    float energy;
     float MIN_ENERGY = pow(10,-3)/N;
     float * array = (float *)malloc(sizeof(float)*N);
     float value;
@@ -264,11 +261,11 @@ void write_file(char* file_name, float*energies, int N){
     max = maximum_energy(energies, N);
     while(i<N+1){
         if(i == 0){
-            fprintf(out_file, "%d %lf\n", (int)max[0], max[1]);
+            fprintf(out_file, "%d %f\n", (int)max[0], max[1]);
             i=i+1;
         }
         else{
-            fprintf(out_file, "%d %lf\n", i-1, energies[i-1]);
+            fprintf(out_file, "%d %f\n", i-1, energies[i-1]);
             i=i+1;
         }
     }
