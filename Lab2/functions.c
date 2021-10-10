@@ -41,8 +41,8 @@ void bomb(Particle * particles, int N){
     int pos;
     double energy;
     double MIN_ENERGY = pow(10,-3)/N;
-    double * array = (double *)malloc(sizeof(double)*N);
-    double value;
+    float * array = (float *)malloc(sizeof(float)*N);
+    float value;
 
     for (int i = 0; i < N; ++i){
         array[i] = 0;
@@ -65,9 +65,9 @@ void bomb(Particle * particles, int N){
     }*/
 }
 
-double* bomb_parallel(Particle * particles, int N, int t){
-        double *final_array = (double *)malloc(sizeof(double)*N);
-        double MIN_ENERGY = pow(10,-3)/N; 
+float* bomb_parallel(Particle * particles, int N, int t){
+        float *final_array = (float *)malloc(sizeof(float)*N);
+        float MIN_ENERGY = pow(10,-3)/N; 
 
         for (int i = 0; i < N; i++){
             final_array[i] = 0;
@@ -75,13 +75,13 @@ double* bomb_parallel(Particle * particles, int N, int t){
         int contador = 0;
     #pragma omp parallel shared(final_array, N, particles) num_threads(t)
     {
-        double value;
+        float value;
         int i;
         int j;
         int pos;
         double energy;
-        double * array;
-        array = (double *)malloc(sizeof(double)*N);
+        float * array;
+        array = (float *)malloc(sizeof(float)*N);
         for ( i = 0; i < N; ++i){
             array[i] = 0;
         }
@@ -114,9 +114,9 @@ double* bomb_parallel(Particle * particles, int N, int t){
     return(final_array);
 }
 
-double* bomb_parallel2(Particle * particles, int N, int t){
-        double *final_array = (double *)malloc(sizeof(double)*N);
-        double MIN_ENERGY = pow(10,-3)/N; 
+float* bomb_parallel2(Particle * particles, int N, int t){
+        float *final_array = (float *)malloc(sizeof(float)*N);
+        float MIN_ENERGY = pow(10,-3)/N; 
 
         for (int i = 0; i < N; i++){
             final_array[i] = 0;
@@ -124,7 +124,7 @@ double* bomb_parallel2(Particle * particles, int N, int t){
         int contador = 0;
     #pragma omp parallel shared(final_array, N, particles) num_threads(t)
     {
-        double value;
+        float value;
         int i;
         int j;
         int pos;
@@ -154,12 +154,12 @@ double* bomb_parallel2(Particle * particles, int N, int t){
     return(final_array);
 }
 
-double * bomb_parallel3(Particle * particles, int N, int t){
+float * bomb_parallel3(Particle * particles, int N, int t){
     int pos;
     double energy;
-    double MIN_ENERGY = pow(10,-3)/N;
-    double * array = (double *)malloc(sizeof(double)*N);
-    double value;
+    float MIN_ENERGY = pow(10,-3)/N;
+    float * array = (float *)malloc(sizeof(float)*N);
+    float value;
 
     for (int i = 0; i < N; ++i){
         array[i] = 0;

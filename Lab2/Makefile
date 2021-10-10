@@ -1,15 +1,17 @@
 CC= gcc
-CFLAGS = -lm -fopenmp -lniceprint -L
-headers = function.h
-library = lniceprint
-bomb: bomb.o function.o
-	$(CC) -o bomb.o function.o $(CFLAGS) 
+CFLAGS = -lm -fopenmp 
+OBJS_MAIN = bomb.o functions.o
+HEADER = functions.h
+library = -lniceprint
 
-bomb.o: bomb.c 
+bomb: $(OBJS_MAIN)
+	$(CC) -o bomb $(OBJS_MAIN) $(CFLAGS) $(library) -L .
+
+bomb.o: bomb.c $(HEADER)
 	$(CC) -c bomb.c 
 
-function.o: function.c 
-	$(CC) -c function 
+functions.o: functions.c $(HEADER)
+	$(CC) -c functions.c 
 
 clean:
 	rm -rf *.o

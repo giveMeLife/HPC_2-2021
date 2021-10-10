@@ -52,18 +52,23 @@ int main(int argc, char *argv[]){
     end_t = clock();
     total_time_sec = (double)(end_t - start_t) / CLOCKS_PER_SEC;
 
-    double* structure = (double*)malloc(sizeof(double)*N);
+    float* structure = (float*)malloc(sizeof(float)*N);
     start_t = clock(); 
     structure = bomb_parallel(particles, N, t);
     end_t = clock();
     total_time_par = (double)(end_t - start_t) / CLOCKS_PER_SEC;
 
 
-    double* structure2 = (double*)malloc(sizeof(double)*N);
+    float* structure2 = (float*)malloc(sizeof(float)*N);
     start_t = clock(); 
     structure2 = bomb_parallel2(particles, N, t);
     end_t = clock();
     total_time_par2 = (double)(end_t - start_t) / CLOCKS_PER_SEC;
     printf("t_par: %lf, t_par2: %lf, t_sec: %lf\n", total_time_par, total_time_par2, total_time_sec);
-   
+    float* structureFinal = (float*)malloc(sizeof(float)*N);
+    for (int i = 0; i < N; ++i)
+    {
+      structureFinal[i] = structure2[i];
+    }
+    niceprint(N,structureFinal);  
 }
