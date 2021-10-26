@@ -56,14 +56,14 @@ __host__ int main(){
 
     int* device_histogram;
     unsigned short int* device_buffer;
-    
+    int size = m*n;
     cudaMalloc((void**) &device_histogram, 256*sizeof(int));
     cudaMalloc((void**) &device_buffer, m*n*sizeof(unsigned short int));
 
     cudaMemcpy(device_histogram, histogram, 256*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(device_buffer, buffer, m*n*sizeof(unsigned short int), cudaMemcpyHostToDevice);
     
-    histgmem<<<(m*n),1>>>(device_buffer, device_histogram);
+    histgmem<<<size,1>>>(device_buffer, device_histogram);
 
     int* hist_final = (int*)malloc(sizeof(int)*256);
     cudaMemcpy(hist_final, device_histogram, 256*sizeof(int), cudaMemcpyDeviceToHost);
