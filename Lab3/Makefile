@@ -1,5 +1,5 @@
 CC= nvcc
-CFLAGS = -lm -fopenmp 
+CFLAGS = -lm  
 OBJS_MAIN = hist.o functions.o
 HEADER = functions.h
   
@@ -16,4 +16,4 @@ clean:
 	rm -rf *.o
 
 run:
-	./hist -i img2lab3-512x512.raw -m 512 -n 512 -o histogram.txt -t 512 -t 512 -d 
+	./hist -i img2lab3-512x512.raw -m 512 -n 512 -o histogram.txt -t 1 -t 512 -d 

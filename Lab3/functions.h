@@ -10,5 +10,6 @@
 #include <time.h>
 
 __host__ void read_image(char* file_name, unsigned short int * buffer_out, int M, int N);
-__global__ void histgmem(unsigned short int* buffer, int* histogram);
+__global__ void histgmem(unsigned short int* buffer, int* histogram, int image_length);
+__global__ void histsmem(unsigned short int* buffer, int* histogram, int image_length);
 __global__ void vecadd(float *a, float *b, float *c);

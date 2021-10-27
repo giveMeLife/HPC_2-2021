@@ -2,16 +2,15 @@
 
 
 
-__host__ int main(){
-/*
+__host__ int main(int argc, char *argv[]){
+
+    int c;
     int m;
     int n;
     int t;
     int d;
-    char * i = malloc(sizeof(char)*30);
-    char * o = malloc(sizeof(char)*30);
-
-    int a;
+    char* i = (char*) malloc(sizeof(char)*30);
+    char* o = (char*) malloc(sizeof(char)*30);
     while ((c = getopt(argc, argv, "i:m:n:o:t:d:")) != -1)
         switch (c)
         {
@@ -40,38 +39,51 @@ __host__ int main(){
             fprintf (stderr,
                     "Unknown option character `\\x%x'.\n",
                     optopt);
-*/
-    int m = 1151;
-    int n = 976;
-    unsigned short int* buffer = (unsigned short int*)malloc(sizeof(unsigned short int)*m*n);
+        }
+
+
+    int image_length = m*n;
+    unsigned short int* buffer = (unsigned short int*)malloc(sizeof(unsigned short int)*image_length);
     int* histogram = (int*)malloc(sizeof(int)*256);
-    for(int i = 0; i<256; i++){
-        histogram[i] = 0;
+    for(int j = 0; j<256; j++){
+        histogram[j] = 0;
     }
-    char name[50] = "img1lab3-1151x976.raw";
-    read_image(name , buffer, m, n);
+    read_image(i , buffer, m, n);
     /*for(int i = 0; i<512; i++){
         printf("%hu\n", buffer[i]);
     }*/
 
     int* device_histogram;
+    int* device_histogram2;
+
     unsigned short int* device_buffer;
-    int size = m*n;
+    
     cudaMalloc((void**) &device_histogram, 256*sizeof(int));
-    cudaMalloc((void**) &device_buffer, m*n*sizeof(unsigned short int));
+    cudaMalloc((void**) &device_buffer, image_length*sizeof(unsigned short int));
 
     cudaMemcpy(device_histogram, histogram, 256*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(device_buffer, buffer, m*n*sizeof(unsigned short int), cudaMemcpyHostToDevice);
+    cudaMemcpy(device_buffer, buffer, image_length*sizeof(unsigned short int), cudaMemcpyHostToDevice);
     
-    histgmem<<<size,1>>>(device_buffer, device_histogram);
-
+    histgmem<<<ceil((image_length)/t),t>>>(device_buffer, device_histogram, image_length);
+    
     int* hist_final = (int*)malloc(sizeof(int)*256);
     cudaMemcpy(hist_final, device_histogram, 256*sizeof(int), cudaMemcpyDeviceToHost);
     
-    for(int i = 0; i<256; i++){
-        printf("%d - %d\n",i, hist_final[i]);
+    for(int j = 0; j<256; j++){
+        printf("%d - %d\n",j, hist_final[j]);
     }
+    printf("**************************\n");
+    
+    cudaMalloc((void**) &device_histogram2, 256*sizeof(int));
 
+    histsmem<<<ceil((image_length)/t),t>>>(device_buffer, device_histogram2, image_length);
+
+    int* hist_final2 = (int*)malloc(sizeof(int)*256);
+    cudaMemcpy(hist_final2, device_histogram2, 256*sizeof(int), cudaMemcpyDeviceToHost);
+     for(int j = 0; j<256; j++){
+        printf("%d - %d\n",j, hist_final2[j]);
+    }
+    printf("%d",d);
 /*
     int N = 1024;
     float *a = (float *) malloc(N*sizeof(float));
