@@ -66,4 +66,31 @@ __global__ void histsmem(unsigned short int* buffer, int* histogram, int image_l
     
 
 }
+/*
+Descripción: Se muestra por pantalla la frecuencia de cada pixel para el histograma con memoria global y compartida.
+Entrada: Histograma obtenido con memoria global y compartida.
+Proceso: Se recorre cada elemento de los histogramas y se muestra por pantalla.
+Salida: Print de los histogramas obtenidos con memoria global y compartida
+*/
+__host__ void debug( int * hist_final, int * hist_final2){
+        for(int i= 0; i < 256; i++){
+            printf("%d  %d\n", hist_final[i], hist_final2[i]);
+        }
+    }
 
+
+/*
+Descripción: Función del host escribe un archivo de texto con los resultados de los histogramas generados
+Entrada: Nombre del archivo a escribir, y los histogramas a escribir en el archivo 
+Proceso: Se crea un archivo de salida con el nombre de file_name que se ingresa en la entrada
+         y se almacenan los valores de los histogramas en dicho archivo.
+salida: Archivo de texto con los histogramas.
+*/
+__hos
+__host__ void write_histogram(char* file_name, int * histogram1, int * histogram2){
+    FILE* out_file = fopen(file_name, "wb");\
+    for(int i = 0; i<256; i++){
+        fprintf(out_file, "%d %d\n", histogram1[i], histogram2[i]);
+    }
+    fclose(out_file);
+}

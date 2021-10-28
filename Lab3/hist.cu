@@ -59,7 +59,13 @@ __host__ int main(int argc, char *argv[]){
     int* device_histogram;
     int* hist_final = (int*)malloc(sizeof(int)*256);
     unsigned short int* device_buffer;
-    
+
+
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+
+    cudaEventRecord(start);
     cudaMalloc((void**) &device_histogram, 256*sizeof(int));
     cudaMalloc((void**) &device_buffer, image_length*sizeof(unsigned short int));
 
@@ -72,24 +78,49 @@ __host__ int main(int argc, char *argv[]){
     
     //Se copia el histograma de device a host
     cudaMemcpy(hist_final, device_histogram, 256*sizeof(int), cudaMemcpyDeviceToHost);
-
     
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float timeinmilliseconds = 0;
+    cudaEventElapsedTime(&timeinmilliseconds, start, stop);
+
+    printf("Tiempo global: %f\n", timeinmilliseconds);
     /* *****************************************************************
        *****************************************************************
        *************************Memoria compartida**********************
        *****************************************************************
        ***************************************************************** */
        
-    // Se asigna memoria en device para el histograma
-    int* device_histogram2;
-    cudaMalloc((void**) &device_histogram2, 256*sizeof(int));
+
+    int* device_histogram2;   
     int* hist_final2 = (int*)malloc(sizeof(int)*256);
+
+
+    cudaEventRecord(start);
+    // Se asigna memoria en device para el histograma
+    cudaMalloc((void**) &device_histogram2, 256*sizeof(int));
+    cudaMalloc((void**) &device_buffer, image_length*sizeof(unsigned short int));
+
+    cudaMemcpy(device_buffer, buffer, image_length*sizeof(unsigned short int), cudaMemcpyHostToDevice); 
+    cudaMemcpy(device_histogram2, histogram, 256*sizeof(int), cudaMemcpyHostToDevice);
 
     //Kernel memoria compartida
     histsmem<<<ceil((image_length)/t),t>>>(device_buffer, device_histogram2, image_length);
 
     //Se copia el histograma de device a host
     cudaMemcpy(hist_final2, device_histogram2, 256*sizeof(int), cudaMemcpyDeviceToHost);
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    timeinmilliseconds = 0;
+    cudaEventElapsedTime(&timeinmilliseconds, start, stop);
+    printf("Tiempo shared: %f\n", timeinmilliseconds);
+
+    if(d==1){
+        debug(hist_final, hist_final2);
+    }
+
+    write_histogram(o, hist_final, hist_final2);
 
     return 0;
 

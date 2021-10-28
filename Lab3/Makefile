@@ -16,4 +16,4 @@ clean:
 	rm -rf *.o
 
 run:
-	./hist -i img2lab3-512x512.raw -m 512 -n 512 -o histogram.txt -t 1 -t 512 -d 
+	./hist -i img2lab3-512x512.raw -m 512 -n 512 -o histogram.txt -t 200 -d 1
